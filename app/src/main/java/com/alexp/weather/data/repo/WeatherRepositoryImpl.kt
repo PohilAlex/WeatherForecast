@@ -11,7 +11,8 @@ class WeatherRepositoryImpl @Inject constructor(
         val remoteData = weatherApi.getOneCallData()
         return remoteData.daily.map { remoteDaily ->
             DailyWeatherInfo(
-                date = remoteDaily.dt,
+                dateTime = remoteDaily.dt.toMillis(),
+                humidity = remoteDaily.humidity,
                 tempNight = remoteDaily.temp.night,
                 tempDay = remoteDaily.temp.day,
                 icon = remoteDaily.weather.firstOrNull()?.icon
@@ -19,3 +20,5 @@ class WeatherRepositoryImpl @Inject constructor(
         }
     }
 }
+
+fun Int.toMillis(): Long = this * 1000L
