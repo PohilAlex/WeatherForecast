@@ -1,13 +1,15 @@
-package com.alexp.weather.data
+package com.alexp.weather.data.source.remote
 
 import com.google.gson.annotations.SerializedName
 
-data class RemoteOneCallData(
+data class OneCallRemoteDTO(
+    @SerializedName("current")
+    val current: CurrentRemoteDTO,
     @SerializedName("daily")
-    val daily: List<RemoteDailyData>
+    val daily: List<DailyRemoteDTO>
 )
 
-data class RemoteDailyData(
+data class DailyRemoteDTO(
     @SerializedName("clouds")
     val clouds: Int,
     @SerializedName("dew_point")
@@ -35,7 +37,7 @@ data class RemoteDailyData(
     @SerializedName("uvi")
     val uvi: Double,
     @SerializedName("weather")
-    val weather: List<Weather>,
+    val weather: List<WeatherItemDTO>,
     @SerializedName("wind_deg")
     val windDeg: Int,
     @SerializedName("wind_gust")
@@ -69,14 +71,16 @@ data class RemoteDailyData(
         val night: Double
     )
 
-    data class Weather(
-        @SerializedName("description")
-        val description: String,
-        @SerializedName("icon")
-        val icon: String,
-        @SerializedName("id")
-        val id: Int,
-        @SerializedName("main")
-        val main: String
-    )
 }
+
+data class WeatherItemDTO(
+    @SerializedName("description")
+    val description: String,
+    @SerializedName("icon")
+    val icon: String,
+    @SerializedName("id")
+    val id: Int,
+    @SerializedName("main")
+    val main: String
+)
+

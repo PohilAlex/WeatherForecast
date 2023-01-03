@@ -1,7 +1,8 @@
 package com.alexp.weather.ui
 
 data class WeatherUiState(
-    val dailyForecast: List<DailyWeatherUiState>
+    val current: CurrentWeatherUiState,
+    val daily: List<DailyWeatherUiState>
 )
 
 data class DailyWeatherUiState(
@@ -10,4 +11,9 @@ data class DailyWeatherUiState(
     val weatherIcon: String,
     val tempDay: Int,
     val tempNight: Int
+)
+
+data class CurrentWeatherUiState(
+    val temp: Int,
+    val feelLike: Int
 )

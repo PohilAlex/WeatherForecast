@@ -28,7 +28,7 @@ import com.alexp.weather.ui.theme.WeatherForecastTheme
 
 @Composable
 fun WeatherScreen(forecastState: WeatherUiState) {
-    DailyForecast(forecastState.dailyForecast)
+    DailyForecast(forecastState.daily)
 }
 
 @Composable

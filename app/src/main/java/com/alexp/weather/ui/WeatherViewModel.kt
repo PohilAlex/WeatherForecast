@@ -20,14 +20,18 @@ class WeatherViewModel @Inject constructor(
     private val weatherRepository: WeatherRepository
 ) : AndroidViewModel(app) {
 
-    private val _uiState = MutableStateFlow(WeatherUiState(emptyList()))
+    private val _uiState = MutableStateFlow(INIT_UI_STATE)
     val uiState: StateFlow<WeatherUiState> = _uiState
     private val dayOfWeekFormatter = SimpleDateFormat("EEEE", Locale.getDefault())
 
     init {
         viewModelScope.launch {
             val weather = weatherRepository.getWeather()
-            val dailyForecast = weather.map { dailyWeatherInfo ->
+            val currentState = CurrentWeatherUiState(
+                temp = weather.current.temp,
+                feelLike = weather.current.feelLike
+            )
+            val dailyForecast = weather.daily.map { dailyWeatherInfo ->
                 DailyWeatherUiState(
                     dayName = getDayOfWeek(dailyWeatherInfo.dateTime),
                     humidity = dailyWeatherInfo.humidity,
@@ -36,7 +40,10 @@ class WeatherViewModel @Inject constructor(
                     tempNight = dailyWeatherInfo.tempNight.roundToInt()
                 )
             }
-            _uiState.value = WeatherUiState(dailyForecast = dailyForecast)
+            _uiState.value = WeatherUiState(
+                current = currentState,
+                daily = dailyForecast
+            )
         }
 
     }
@@ -64,3 +71,8 @@ class WeatherViewModel @Inject constructor(
     }
 
 }
+
+private val INIT_UI_STATE = WeatherUiState(
+    current = CurrentWeatherUiState(temp = 0, feelLike = 0),
+    daily = emptyList()
+)
