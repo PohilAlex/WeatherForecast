@@ -16,7 +16,7 @@ class WeatherRepositoryImpl @Inject constructor(
                 temp = current.temp.roundToInt(),
                 feelLike = current.feelsLike.roundToInt(),
                 updateTime = current.dt.toMillis(),
-                icon = current.weather.firstOrNull()?.icon
+                iconCode = current.weather.firstOrNull()?.icon
             ),
             daily = remoteData.daily.map { remoteDaily ->
                 DailyWeatherInfo(

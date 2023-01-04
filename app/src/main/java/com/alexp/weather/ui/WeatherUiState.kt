@@ -8,12 +8,14 @@ data class WeatherUiState(
 data class DailyWeatherUiState(
     val dayName: String,
     val humidity: Int,
-    val weatherIcon: String,
+    val icon: String,
     val tempDay: Int,
     val tempNight: Int
 )
 
 data class CurrentWeatherUiState(
     val temp: Int,
-    val feelLike: Int
+    val feelLike: Int,
+    val updatedTime: String,
+    val icon: String
 )

@@ -23,7 +23,7 @@ data class CurrentRemoteDTO(
     @SerializedName("temp")
     val temp: Double,
     @SerializedName("uvi")
-    val uvi: Int,
+    val uvi: Double,
     @SerializedName("visibility")
     val visibility: Int,
     @SerializedName("weather")
