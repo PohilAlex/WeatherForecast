@@ -1,6 +1,9 @@
 package com.alexp.weather.ui
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.LocalOverscrollConfiguration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,10 +14,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material.Icon
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,6 +33,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -33,12 +41,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.alexp.weather.R
 import com.alexp.weather.ui.theme.Background
+import com.alexp.weather.ui.theme.ChartGrey
+import com.alexp.weather.ui.theme.Grey
 import com.alexp.weather.ui.theme.HumidityHigh
 import com.alexp.weather.ui.theme.HumidityLow
 import com.alexp.weather.ui.theme.Shapes
@@ -56,6 +67,7 @@ import kotlin.math.min
 private val toolbarHeightMax = 170.dp
 private val toolbarHeightMin = 100.dp
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun WeatherScreen(forecastState: WeatherUiState) {
 
@@ -73,12 +85,19 @@ fun WeatherScreen(forecastState: WeatherUiState) {
         )
     }
 
-    Column(modifier = Modifier
-        .background(Background)
-        .nestedScroll(nestedScrollConnection)) {
+    Column(
+        modifier = Modifier
+            .background(Background)
+            .nestedScroll(nestedScrollConnection)
+    ) {
         CurrentWeather(forecastState.current, toolbarExpandRatio.value)
-        LazyColumn {
-            item { DailyForecast(forecastState.daily) }
+        CompositionLocalProvider(
+            LocalOverscrollConfiguration provides null
+        ) {
+            LazyColumn {
+                item { HourlyForecast(forecastState.hourly) }
+                item { DailyForecast(forecastState.daily) }
+            }
         }
     }
 }
@@ -91,22 +110,34 @@ private fun CurrentWeather(current: CurrentWeatherUiState, expandRatio: Float) {
             .fillMaxWidth()
             .height(toolbarHeightMin + (toolbarHeightMax - toolbarHeightMin) * expandRatio)
     ) {
-            Text(
-                text = "${current.temp}°",
-                fontSize = 72.sp,
+        val localDensity = LocalDensity.current
+        val tempWidthDp = remember { mutableStateOf(0.dp) }
+        Text(
+            text = "${current.temp}°",
+            fontSize = 72.sp,
+            fontWeight = FontWeight.Light,
+            modifier = Modifier.onGloballyPositioned {
+                tempWidthDp.value = with(localDensity) { it.size.width.toDp() }
+            }
+        )
+        Text(
+            text = stringResource(R.string.feel_like, current.feelLike),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(
+                top = 70.dp * expandRatio + 35.dp,
+                start = (tempWidthDp.value + 10.dp) * (1 - expandRatio)
             )
-            Text(
-                text = stringResource(R.string.feel_like, current.feelLike),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(top = 70.dp * expandRatio + 35.dp, start = 80.dp * (1 - expandRatio))
+        )
+        Text(
+            text = current.updatedTime,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(
+                top = 70.dp * expandRatio + 55.dp,
+                start = (tempWidthDp.value + 10.dp) * (1 - expandRatio)
             )
-            Text(
-                text = current.updatedTime,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(top = 70.dp * expandRatio + 55.dp, start = 80.dp * (1 - expandRatio))
-            )
+        )
         AsyncImage(
             model = current.icon,
             contentDescription = null,
@@ -118,6 +149,124 @@ private fun CurrentWeather(current: CurrentWeatherUiState, expandRatio: Float) {
     }
 
 }
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun HourlyForecast(hourly: List<HourlyWeatherUiState>) {
+    Surface(
+        elevation = 8.dp,
+        shape = Shapes.medium,
+        modifier = Modifier.padding(10.dp)
+    ) {
+        CompositionLocalProvider(
+            LocalOverscrollConfiguration provides null
+        ) {
+            LazyRow(modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp)) {
+                for (hour in hourly) {
+                    item { HourItemForecast(hour) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HourItemForecast(hour: HourlyWeatherUiState) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(50.dp),
+    ) {
+        val localDensity = LocalDensity.current
+        Text(
+            text = hour.time,
+            fontSize = 12.sp,
+            color = Grey,
+            fontWeight = FontWeight.SemiBold
+        )
+        AsyncImage(
+            model = hour.icon,
+            contentDescription = null,
+            modifier = Modifier
+                .size(36.dp)
+            //.padding(horizontal = 6.dp)
+        )
+        Text(
+            text = "${hour.temp}°",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+        TempChartItem(hour, localDensity)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(top = 8.dp)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.wind_icon),
+                contentDescription = null,
+                tint = HumidityHigh,
+                modifier = Modifier.size(16.dp)
+            )
+            Text(
+                text = hour.windSpeed.toString(),
+                fontSize = 14.sp,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun TempChartItem(
+    hour: HourlyWeatherUiState,
+    localDensity: Density
+) {
+    Canvas(
+        modifier = Modifier
+            .padding(top = 10.dp)
+            .height(height = 35.dp)
+            .fillMaxWidth()
+    ) {
+        val chartItem = hour.chartItem
+        drawCircle(
+            color = ChartGrey,
+            center = Offset(
+                x = size.width / 2,
+                y = size.height * chartItem.currentHeight
+            ),
+            radius = with(localDensity) { 3.dp.toPx() }
+        )
+        if (chartItem.prevHeight != null) {
+            drawLine(
+                color = ChartGrey,
+                strokeWidth = with(localDensity) { 1.dp.toPx() },
+                start = Offset(
+                    x = 0f,
+                    y = size.height * chartItem.prevHeight,
+                ),
+                end = Offset(
+                    x = size.width / 2,
+                    y = size.height * chartItem.currentHeight,
+                )
+            )
+        }
+        if (chartItem.nextHeight != null) {
+            drawLine(
+                color = ChartGrey,
+                strokeWidth = with(localDensity) { 1.dp.toPx() },
+                start = Offset(
+                    x = size.width / 2,
+                    y = size.height * chartItem.currentHeight,
+                ),
+                end = Offset(
+                    x = size.width,
+                    y = size.height * chartItem.nextHeight
+                )
+            )
+        }
+    }
+}
+
 
 @Composable
 private fun DailyForecast(dailyForecast: List<DailyWeatherUiState>) {
@@ -171,8 +320,8 @@ private fun DailyItemForecast(day: DailyWeatherUiState) {
             model = day.icon,
             contentDescription = null,
             modifier = Modifier
-                .size(36.dp)
                 .padding(horizontal = 6.dp)
+                .size(36.dp)
         )
         Spacer(modifier = Modifier.weight(1f))
         Text(
@@ -288,7 +437,19 @@ private fun CurrentWeatherPreview() {
                         tempNight = 20
                     )
                 ),
-                hourly = emptyList()
+                hourly = listOf(
+                    HourlyWeatherUiState(
+                        time = "12:00",
+                        temp = 10,
+                        icon = "",
+                        windSpeed = 3,
+                        chartItem = TempChartItem(
+                            prevHeight = 0.3f,
+                            currentHeight = 0.5f,
+                            nextHeight = 0.6f
+                        )
+                    )
+                )
             )
         )
     }
@@ -300,7 +461,7 @@ private fun WeatherScreenPreview() {
     WeatherForecastTheme {
         CurrentWeather(
             CurrentWeatherUiState(
-                temp = 10,
+                temp = -10,
                 feelLike = 12,
                 updatedTime = "Wed, 11:28",
                 icon = ""
@@ -310,6 +471,26 @@ private fun WeatherScreenPreview() {
     }
 }
 
+
+@Preview(showBackground = true)
+@Composable
+private fun HourItemForecastPreview() {
+    WeatherForecastTheme {
+        HourItemForecast(
+            HourlyWeatherUiState(
+                time = "12:00",
+                temp = 10,
+                icon = "",
+                windSpeed = 3,
+                chartItem = TempChartItem(
+                    prevHeight = 0.3f,
+                    currentHeight = 0.5f,
+                    nextHeight = 0.6f
+                )
+            )
+        )
+    }
+}
 
 @Preview(showBackground = true)
 @Composable

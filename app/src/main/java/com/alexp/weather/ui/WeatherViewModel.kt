@@ -40,7 +40,7 @@ class WeatherViewModel @Inject constructor(
         }
     }
 
-    private fun currentCurrentWeatherUiState(current: CurrentWeatherInfo) =
+    private fun currentCurrentWeatherUiState(current: CurrentWeatherInfo): CurrentWeatherUiState =
         CurrentWeatherUiState(
             temp = current.temp,
             feelLike = current.feelLike,
@@ -48,7 +48,7 @@ class WeatherViewModel @Inject constructor(
             icon = getIconUrl(current.iconCode)
         )
 
-    private fun dailyDailyWeatherUiStates(weather: WeatherInfo) =
+    private fun dailyDailyWeatherUiStates(weather: WeatherInfo): List<DailyWeatherUiState> =
         weather.daily.map { dailyWeatherInfo ->
             DailyWeatherUiState(
                 dayName = getDayOfWeek(dailyWeatherInfo.dateTime),
@@ -59,15 +59,34 @@ class WeatherViewModel @Inject constructor(
             )
         }
 
-    private fun getHourlyWeatherUiStates(weather: WeatherInfo) =
-        weather.hourly.map { hourlyInfo ->
-            HourlyWeatherUiState(
-                time = hourlyTimeFormatter.format(Date(hourlyInfo.dateTime)),
-                temp = hourlyInfo.temp.roundToInt(),
-                icon = getIconUrl(hourlyInfo.iconCode),
-                windSpeed = hourlyInfo.windSpeed.roundToInt(),
+    private fun getHourlyWeatherUiStates(weather: WeatherInfo): List<HourlyWeatherUiState> {
+        val hours = weather.hourly.take(24)
+        val minTemp = hours.minOf { it.temp }
+        val maxTemp = hours.maxOf { it.temp }
+
+        fun getChartHeight(temp: Double): Float {
+            return 1 - ((temp - minTemp) / (maxTemp - minTemp)).toFloat()
+        }
+
+        val hoursUiState: MutableList<HourlyWeatherUiState> = mutableListOf()
+        for (i in hours.indices) {
+            val hourlyInfo = hours[i]
+            hoursUiState.add(
+                HourlyWeatherUiState(
+                    time = hourlyTimeFormatter.format(Date(hourlyInfo.dateTime)),
+                    temp = hourlyInfo.temp.roundToInt(),
+                    icon = getIconUrl(hourlyInfo.iconCode),
+                    windSpeed = hourlyInfo.windSpeed.roundToInt(),
+                    chartItem = TempChartItem(
+                        prevHeight = hours.getOrNull(i - 1)?.let { getChartHeight((it.temp + hourlyInfo.temp) / 2) },
+                        currentHeight = getChartHeight(hourlyInfo.temp),
+                        nextHeight = hours.getOrNull(i + 1)?.let { getChartHeight((it.temp + hourlyInfo.temp) / 2) }
+                    )
+                )
             )
         }
+       return hoursUiState
+    }
 
 
     private fun getIconUrl(iconCode: String?): String {

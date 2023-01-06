@@ -25,5 +25,12 @@ data class HourlyWeatherUiState(
     val time: String,
     val temp: Int,
     val icon: String,
+    val chartItem: TempChartItem,
     val windSpeed: Int
+)
+
+data class TempChartItem(
+    val prevHeight: Float?,
+    val currentHeight: Float,
+    val nextHeight: Float?
 )
