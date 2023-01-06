@@ -3,7 +3,7 @@ package com.alexp.weather.data.source.remote
 
 import com.google.gson.annotations.SerializedName
 
-data class CurrentRemoteDTO(
+data class HourlyRemoteDTO(
     @SerializedName("clouds")
     val clouds: Int,
     @SerializedName("dew_point")
@@ -14,12 +14,10 @@ data class CurrentRemoteDTO(
     val feelsLike: Double,
     @SerializedName("humidity")
     val humidity: Int,
+    @SerializedName("pop")
+    val pop: Int,
     @SerializedName("pressure")
     val pressure: Int,
-    @SerializedName("sunrise")
-    val sunrise: Int,
-    @SerializedName("sunset")
-    val sunset: Int,
     @SerializedName("temp")
     val temp: Double,
     @SerializedName("uvi")
@@ -30,6 +28,8 @@ data class CurrentRemoteDTO(
     val weather: List<WeatherItemRemoteDTO>,
     @SerializedName("wind_deg")
     val windDeg: Int,
+    @SerializedName("wind_gust")
+    val windGust: Double,
     @SerializedName("wind_speed")
     val windSpeed: Double
 )

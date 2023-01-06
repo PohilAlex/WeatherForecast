@@ -287,7 +287,8 @@ private fun CurrentWeatherPreview() {
                         tempDay = 5,
                         tempNight = 20
                     )
-                )
+                ),
+                hourly = emptyList()
             )
         )
     }

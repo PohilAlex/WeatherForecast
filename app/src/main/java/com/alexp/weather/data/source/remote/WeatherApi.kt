@@ -11,7 +11,7 @@ interface WeatherApi {
     suspend fun getOneCallData(
         @Query("lat") lat: Double = 50.450001,
         @Query("lon") lon: Double = 30.523333,
-        @Query("exclude") exclude: String = "minutely,hourly,alerts",
+        @Query("exclude") exclude: String = "minutely,alerts",
         @Query("units") unit: String = "metric",
         @Query("appid") appid: String = "96c36fd2d716d9538d725e92c7b2ffa3"
     ): OneCallRemoteDTO

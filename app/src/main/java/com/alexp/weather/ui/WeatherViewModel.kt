@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.alexp.weather.R
+import com.alexp.weather.data.repo.CurrentWeatherInfo
+import com.alexp.weather.data.repo.WeatherInfo
 import com.alexp.weather.data.repo.WeatherRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,39 +24,51 @@ class WeatherViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(INIT_UI_STATE)
     val uiState: StateFlow<WeatherUiState> = _uiState
+
     private val dayOfWeekFormatter = SimpleDateFormat("EEEE", Locale.getDefault())
     private val updateTimeFormatter = SimpleDateFormat("EEE, HH:mm", Locale.getDefault())
+    private val hourlyTimeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
 
     init {
         viewModelScope.launch {
             val weather = weatherRepository.getWeather()
-            val current = weather.current
-            val currentState = CurrentWeatherUiState(
-                temp = current.temp,
-                feelLike = current.feelLike,
-                updatedTime = getWeatherUpdatedTime(current.updateTime),
-                icon = getIconUrl(current.iconCode)
-            )
-            val dailyForecast = weather.daily.map { dailyWeatherInfo ->
-                DailyWeatherUiState(
-                    dayName = getDayOfWeek(dailyWeatherInfo.dateTime),
-                    humidity = dailyWeatherInfo.humidity,
-                    icon = getIconUrl(dailyWeatherInfo.icon),
-                    tempDay = dailyWeatherInfo.tempDay.roundToInt(),
-                    tempNight = dailyWeatherInfo.tempNight.roundToInt()
-                )
-            }
             _uiState.value = WeatherUiState(
-                current = currentState,
-                daily = dailyForecast
+                current = currentCurrentWeatherUiState(weather.current),
+                daily = dailyDailyWeatherUiStates(weather),
+                hourly = getHourlyWeatherUiStates(weather)
+            )
+        }
+    }
+
+    private fun currentCurrentWeatherUiState(current: CurrentWeatherInfo) =
+        CurrentWeatherUiState(
+            temp = current.temp,
+            feelLike = current.feelLike,
+            updatedTime = updateTimeFormatter.format(Date(current.updateTime)),
+            icon = getIconUrl(current.iconCode)
+        )
+
+    private fun dailyDailyWeatherUiStates(weather: WeatherInfo) =
+        weather.daily.map { dailyWeatherInfo ->
+            DailyWeatherUiState(
+                dayName = getDayOfWeek(dailyWeatherInfo.dateTime),
+                humidity = dailyWeatherInfo.humidity,
+                icon = getIconUrl(dailyWeatherInfo.iconCode),
+                tempDay = dailyWeatherInfo.tempDay.roundToInt(),
+                tempNight = dailyWeatherInfo.tempNight.roundToInt()
             )
         }
 
-    }
+    private fun getHourlyWeatherUiStates(weather: WeatherInfo) =
+        weather.hourly.map { hourlyInfo ->
+            HourlyWeatherUiState(
+                time = hourlyTimeFormatter.format(Date(hourlyInfo.dateTime)),
+                temp = hourlyInfo.temp.roundToInt(),
+                icon = getIconUrl(hourlyInfo.iconCode),
+                windSpeed = hourlyInfo.windSpeed.roundToInt(),
+            )
+        }
 
-    private fun getWeatherUpdatedTime(updateTime: Long): String {
-        return updateTimeFormatter.format(Date(updateTime))
-    }
 
     private fun getIconUrl(iconCode: String?): String {
         return iconCode?.let {
@@ -87,5 +101,6 @@ private val INIT_UI_STATE = WeatherUiState(
         updatedTime = "",
         icon = ""
     ),
-    daily = emptyList()
+    daily = emptyList(),
+    hourly = emptyList()
 )

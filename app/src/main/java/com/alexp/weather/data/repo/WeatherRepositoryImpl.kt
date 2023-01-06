@@ -1,6 +1,7 @@
 package com.alexp.weather.data.repo
 
 import com.alexp.weather.data.source.remote.WeatherApi
+import com.alexp.weather.data.source.remote.WeatherItemRemoteDTO
 import javax.inject.Inject
 import kotlin.math.roundToInt
 
@@ -16,7 +17,7 @@ class WeatherRepositoryImpl @Inject constructor(
                 temp = current.temp.roundToInt(),
                 feelLike = current.feelsLike.roundToInt(),
                 updateTime = current.dt.toMillis(),
-                iconCode = current.weather.firstOrNull()?.icon
+                iconCode = current.weather.getIconCode()
             ),
             daily = remoteData.daily.map { remoteDaily ->
                 DailyWeatherInfo(
@@ -24,11 +25,21 @@ class WeatherRepositoryImpl @Inject constructor(
                     humidity = remoteDaily.humidity,
                     tempNight = remoteDaily.temp.night,
                     tempDay = remoteDaily.temp.day,
-                    icon = remoteDaily.weather.firstOrNull()?.icon
+                    iconCode = remoteDaily.weather.getIconCode()
+                )
+            },
+            hourly = remoteData.hourly.map { remoteHourly ->
+                HourlyWeatherInfo(
+                    dateTime = remoteHourly.dt.toMillis(),
+                    temp = remoteHourly.temp,
+                    iconCode = remoteHourly.weather.getIconCode(),
+                    windSpeed = remoteHourly.windSpeed
                 )
             }
         )
     }
 }
 
-fun Int.toMillis(): Long = this * 1000L
+private fun Int.toMillis(): Long = this * 1000L
+
+private fun List<WeatherItemRemoteDTO>.getIconCode(): String? = firstOrNull()?.icon
