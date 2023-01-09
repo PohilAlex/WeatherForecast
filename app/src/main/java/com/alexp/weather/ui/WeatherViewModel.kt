@@ -1,6 +1,7 @@
 package com.alexp.weather.ui
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.alexp.weather.R
@@ -8,13 +9,18 @@ import com.alexp.weather.data.repo.CurrentWeatherInfo
 import com.alexp.weather.data.repo.WeatherInfo
 import com.alexp.weather.data.repo.WeatherRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
+import kotlin.math.max
 import kotlin.math.roundToInt
+
+private const val TAG = "WeatherViewModel"
+private const val MIN_LOADING_TIME = 1000
 
 @HiltViewModel
 class WeatherViewModel @Inject constructor(
@@ -35,7 +41,30 @@ class WeatherViewModel @Inject constructor(
             _uiState.value = WeatherUiState(
                 current = currentCurrentWeatherUiState(weather.current),
                 daily = dailyDailyWeatherUiStates(weather),
-                hourly = getHourlyWeatherUiStates(weather)
+                hourly = getHourlyWeatherUiStates(weather),
+                isLoading = false
+            )
+        }
+    }
+
+    fun onRefresh() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isLoading = true
+            )
+            val startTime = System.currentTimeMillis()
+            val weather = weatherRepository.getWeather()
+            _uiState.value =_uiState.value.copy(
+                current = currentCurrentWeatherUiState(weather.current),
+                daily = dailyDailyWeatherUiStates(weather),
+                hourly = getHourlyWeatherUiStates(weather),
+            )
+            val endTime = System.currentTimeMillis()
+            val delay = endTime - startTime
+            Log.d(TAG, "Refresh time=$delay")
+            delay(max(0, MIN_LOADING_TIME - delay))
+            _uiState.value = _uiState.value.copy(
+                isLoading = false
             )
         }
     }
@@ -121,5 +150,6 @@ private val INIT_UI_STATE = WeatherUiState(
         icon = ""
     ),
     daily = emptyList(),
-    hourly = emptyList()
+    hourly = emptyList(),
+    isLoading = true
 )

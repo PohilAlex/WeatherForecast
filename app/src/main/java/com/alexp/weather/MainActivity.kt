@@ -30,8 +30,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    val uiState by viewModel.uiState.collectAsState()
-                    WeatherScreen(uiState)
+                    WeatherScreen(viewModel)
                 }
             }
         }

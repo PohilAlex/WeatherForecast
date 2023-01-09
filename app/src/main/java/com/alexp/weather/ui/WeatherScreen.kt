@@ -17,12 +17,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -45,6 +50,8 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.ExperimentalLifecycleComposeApi
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.alexp.weather.R
 import com.alexp.weather.ui.theme.Background
@@ -67,10 +74,19 @@ import kotlin.math.min
 private val toolbarHeightMax = 170.dp
 private val toolbarHeightMin = 100.dp
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalLifecycleComposeApi::class)
 @Composable
-fun WeatherScreen(forecastState: WeatherUiState) {
+fun WeatherScreen(viewModel: WeatherViewModel) {
+    val forecastState by viewModel.uiState.collectAsStateWithLifecycle()
+    WeatherContent(
+        forecastState = forecastState,
+        onRefresh = { viewModel.onRefresh() }
+    )
+}
 
+@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
+@Composable
+fun WeatherContent(forecastState: WeatherUiState, onRefresh: () -> Unit) {
     val toolbarHeightMaxPx = with(LocalDensity.current) { toolbarHeightMax.roundToPx().toFloat() }
     val toolbarHeightMinPx = with(LocalDensity.current) { toolbarHeightMin.roundToPx().toFloat() }
     val toolbarExpandRatio = remember { mutableStateOf(1f) }
@@ -85,20 +101,33 @@ fun WeatherScreen(forecastState: WeatherUiState) {
         )
     }
 
-    Column(
-        modifier = Modifier
-            .background(Background)
-            .nestedScroll(nestedScrollConnection)
-    ) {
-        CurrentWeather(forecastState.current, toolbarExpandRatio.value)
-        CompositionLocalProvider(
-            LocalOverscrollConfiguration provides null
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = forecastState.isLoading,
+        onRefresh = onRefresh
+    )
+
+    Box(modifier = Modifier
+        .pullRefresh(pullRefreshState)
+        .background(Background)) {
+        Column(
+            modifier = Modifier
+                .nestedScroll(nestedScrollConnection)
         ) {
-            LazyColumn {
-                item { HourlyForecast(forecastState.hourly) }
-                item { DailyForecast(forecastState.daily) }
+            CurrentWeather(forecastState.current, toolbarExpandRatio.value)
+            CompositionLocalProvider(
+                LocalOverscrollConfiguration provides null
+            ) {
+                LazyColumn {
+                    item { HourlyForecast(forecastState.hourly) }
+                    item { DailyForecast(forecastState.daily) }
+                }
             }
         }
+        PullRefreshIndicator(
+            refreshing = forecastState.isLoading,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
     }
 }
 
@@ -420,7 +449,7 @@ private fun nestedScrollConnection(
 @Composable
 private fun CurrentWeatherPreview() {
     WeatherForecastTheme {
-        WeatherScreen(
+        WeatherContent(
             WeatherUiState(
                 current = CurrentWeatherUiState(
                     temp = 10,
@@ -449,8 +478,10 @@ private fun CurrentWeatherPreview() {
                             nextHeight = 0.6f
                         )
                     )
-                )
-            )
+                ),
+                isLoading = false
+            ),
+            onRefresh = { }
         )
     }
 }

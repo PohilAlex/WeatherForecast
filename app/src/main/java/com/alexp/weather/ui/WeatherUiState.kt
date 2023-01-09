@@ -3,7 +3,8 @@ package com.alexp.weather.ui
 data class WeatherUiState(
     val current: CurrentWeatherUiState,
     val daily: List<DailyWeatherUiState>,
-    val hourly: List<HourlyWeatherUiState>
+    val hourly: List<HourlyWeatherUiState>,
+    val isLoading: Boolean = false,
 )
 
 data class DailyWeatherUiState(
