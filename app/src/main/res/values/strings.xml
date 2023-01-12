@@ -2,4 +2,7 @@
     <string name="app_name">WeatherForecast</string>
     <string name="today">Today</string>
     <string name="feel_like">Feels like %d°</string>
+    <string name="data_not_available">Data isn\'t available</string>
+    <string name="loading">Loading weather for You</string>
+    <string name="regresh">Refresh</string>
 </resources>

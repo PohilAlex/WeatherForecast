@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -17,15 +18,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material.Button
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
+import androidx.compose.material.Scaffold
+import androidx.compose.material.ScaffoldState
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -76,17 +82,100 @@ private val toolbarHeightMin = 100.dp
 
 @OptIn(ExperimentalLifecycleComposeApi::class)
 @Composable
-fun WeatherScreen(viewModel: WeatherViewModel) {
+fun WeatherScreen(
+    viewModel: WeatherViewModel,
+    scaffoldState: ScaffoldState = rememberScaffoldState()
+) {
     val forecastState by viewModel.uiState.collectAsStateWithLifecycle()
-    WeatherContent(
-        forecastState = forecastState,
-        onRefresh = { viewModel.onRefresh() }
-    )
+    Scaffold(scaffoldState = scaffoldState) { paddingValues ->
+        if (forecastState.daily.isEmpty()) {
+            if (forecastState.isLoading) {
+                LoadingView()
+            } else {
+                RetryView(onRetry = { viewModel.onRefresh() })
+            }
+        } else {
+            WeatherContent(
+                forecastState = forecastState,
+                onRefresh = { viewModel.onRefresh() },
+                modifier = Modifier.padding(paddingValues)
+            )
+        }
+        forecastState.message?.let { message ->
+            LaunchedEffect(message, scaffoldState) {
+                scaffoldState.snackbarHostState.showSnackbar(message)
+                viewModel.onMessageShown()
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoadingView() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Background)
+    ) {
+        Column(modifier = Modifier.align(Alignment.Center)) {
+            Icon(
+                painterResource(id = R.drawable.ic_loading_loading),
+                contentDescription = null,
+                tint = HumidityHigh,
+                modifier = Modifier
+                    .padding(bottom = 8.dp)
+                    .size(36.dp)
+                    .align(Alignment.CenterHorizontally)
+            )
+            Text(
+                text = stringResource(R.string.loading),
+                fontSize = 18.sp,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RetryView(
+    onRetry: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Background)
+    ) {
+        Column(modifier = Modifier.align(Alignment.Center)) {
+            Icon(
+                painterResource(id = R.drawable.ic_retry),
+                contentDescription = null,
+                tint = HumidityHigh,
+                modifier = Modifier
+                    .padding(bottom = 8.dp)
+                    .size(36.dp)
+                    .align(Alignment.CenterHorizontally)
+            )
+            Text(
+                text = stringResource(R.string.data_not_available),
+                fontSize = 18.sp,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Button(
+                onClick = onRetry,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text(stringResource(R.string.regresh))
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun WeatherContent(forecastState: WeatherUiState, onRefresh: () -> Unit) {
+fun WeatherContent(
+    forecastState: WeatherUiState,
+    onRefresh: () -> Unit,
+    modifier: Modifier
+) {
     val toolbarHeightMaxPx = with(LocalDensity.current) { toolbarHeightMax.roundToPx().toFloat() }
     val toolbarHeightMinPx = with(LocalDensity.current) { toolbarHeightMin.roundToPx().toFloat() }
     val toolbarExpandRatio = remember { mutableStateOf(1f) }
@@ -103,12 +192,14 @@ fun WeatherContent(forecastState: WeatherUiState, onRefresh: () -> Unit) {
 
     val pullRefreshState = rememberPullRefreshState(
         refreshing = forecastState.isLoading,
-        onRefresh = onRefresh
+        onRefresh = onRefresh,
     )
 
-    Box(modifier = Modifier
-        .pullRefresh(pullRefreshState)
-        .background(Background)) {
+    Box(
+        modifier = modifier
+            .pullRefresh(pullRefreshState)
+            .background(Background)
+    ) {
         Column(
             modifier = Modifier
                 .nestedScroll(nestedScrollConnection)
@@ -481,7 +572,8 @@ private fun CurrentWeatherPreview() {
                 ),
                 isLoading = false
             ),
-            onRefresh = { }
+            onRefresh = { },
+            modifier = Modifier
         )
     }
 }
@@ -536,5 +628,21 @@ private fun DailyItemForecastPreview() {
                 tempNight = 20
             )
         )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun EmptyViewPreview() {
+    WeatherForecastTheme {
+        LoadingView()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RetryPreview() {
+    WeatherForecastTheme {
+        RetryView(onRetry = { })
     }
 }

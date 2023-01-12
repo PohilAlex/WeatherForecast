@@ -9,6 +9,7 @@ import com.alexp.weather.data.repo.CurrentWeatherInfo
 import com.alexp.weather.data.repo.WeatherInfo
 import com.alexp.weather.data.repo.WeatherRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,12 +38,26 @@ class WeatherViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            updateWeather(updateLoaderOnSuccess = true)
+        }
+    }
+
+    private suspend fun updateWeather(updateLoaderOnSuccess: Boolean) {
+        try {
             val weather = weatherRepository.getWeather()
-            _uiState.value = WeatherUiState(
+            _uiState.value = _uiState.value.copy(
                 current = currentCurrentWeatherUiState(weather.current),
                 daily = dailyDailyWeatherUiStates(weather),
                 hourly = getHourlyWeatherUiStates(weather),
-                isLoading = false
+                isLoading = if (updateLoaderOnSuccess) false else _uiState.value.isLoading
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "Load weather failed", e)
+            _uiState.value = _uiState.value.copy(
+                message = "Something went wrong =(",
+                isLoading = false,
             )
         }
     }
@@ -53,12 +68,7 @@ class WeatherViewModel @Inject constructor(
                 isLoading = true
             )
             val startTime = System.currentTimeMillis()
-            val weather = weatherRepository.getWeather()
-            _uiState.value =_uiState.value.copy(
-                current = currentCurrentWeatherUiState(weather.current),
-                daily = dailyDailyWeatherUiStates(weather),
-                hourly = getHourlyWeatherUiStates(weather),
-            )
+            updateWeather(updateLoaderOnSuccess = false)
             val endTime = System.currentTimeMillis()
             val delay = endTime - startTime
             Log.d(TAG, "Refresh time=$delay")
@@ -67,6 +77,12 @@ class WeatherViewModel @Inject constructor(
                 isLoading = false
             )
         }
+    }
+
+    fun onMessageShown() {
+        _uiState.value = _uiState.value.copy(
+            message = null
+        )
     }
 
     private fun currentCurrentWeatherUiState(current: CurrentWeatherInfo): CurrentWeatherUiState =
