@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.Scaffold
@@ -40,6 +41,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -161,7 +163,11 @@ private fun RetryView(
             )
             Button(
                 onClick = onRetry,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = HumidityHigh,
+                    contentColor = Color.White
+                )
             ) {
                 Text(stringResource(R.string.regresh))
             }
@@ -193,10 +199,12 @@ fun WeatherContent(
     val pullRefreshState = rememberPullRefreshState(
         refreshing = forecastState.isLoading,
         onRefresh = onRefresh,
+        refreshingOffset = 80.dp
     )
 
     Box(
         modifier = modifier
+            .fillMaxSize()
             .pullRefresh(pullRefreshState)
             .background(Background)
     ) {
