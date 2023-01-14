@@ -5,6 +5,7 @@ data class WeatherUiState(
     val daily: List<DailyWeatherUiState>,
     val hourly: List<HourlyWeatherUiState>,
     val isLoading: Boolean = false,
+    val isPermissionGranted: Boolean,
     val message: String? = null
 )
 

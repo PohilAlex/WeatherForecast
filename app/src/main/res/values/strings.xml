@@ -5,4 +5,6 @@
     <string name="data_not_available">Data isn\'t available</string>
     <string name="loading">Loading weather for You</string>
     <string name="regresh">Refresh</string>
+    <string name="ask_location_permission">Please allow location permission to show actual forecast for you</string>
+    <string name="allow_permission">Allow Permission</string>
 </resources>

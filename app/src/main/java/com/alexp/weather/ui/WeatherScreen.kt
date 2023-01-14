@@ -1,5 +1,8 @@
 package com.alexp.weather.ui
 
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -62,6 +65,7 @@ import androidx.lifecycle.compose.ExperimentalLifecycleComposeApi
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.alexp.weather.R
+import com.alexp.weather.data.repo.LOCATION_PERMISSION
 import com.alexp.weather.ui.theme.Background
 import com.alexp.weather.ui.theme.ChartGrey
 import com.alexp.weather.ui.theme.Grey
@@ -81,6 +85,7 @@ import kotlin.math.min
 
 private val toolbarHeightMax = 170.dp
 private val toolbarHeightMin = 100.dp
+private const val TAG = "WeatherScreen"
 
 @OptIn(ExperimentalLifecycleComposeApi::class)
 @Composable
@@ -90,23 +95,76 @@ fun WeatherScreen(
 ) {
     val forecastState by viewModel.uiState.collectAsStateWithLifecycle()
     Scaffold(scaffoldState = scaffoldState) { paddingValues ->
-        if (forecastState.daily.isEmpty()) {
-            if (forecastState.isLoading) {
-                LoadingView()
-            } else {
-                RetryView(onRetry = { viewModel.onRefresh() })
-            }
-        } else {
-            WeatherContent(
-                forecastState = forecastState,
-                onRefresh = { viewModel.onRefresh() },
-                modifier = Modifier.padding(paddingValues)
+        if (!forecastState.isPermissionGranted) {
+            PermissionNotGrantedView(
+                onLocationPermissionChanged = { viewModel.onLocationPermissionChanged(it) }
             )
+        } else {
+            if (forecastState.daily.isEmpty()) {
+                if (forecastState.isLoading) {
+                    LoadingView()
+                } else {
+                    RetryView(onRetry = { viewModel.onRefresh() })
+                }
+            } else {
+                WeatherContent(
+                    forecastState = forecastState,
+                    onRefresh = { viewModel.onRefresh() },
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
+            forecastState.message?.let { message ->
+                LaunchedEffect(message, scaffoldState) {
+                    scaffoldState.snackbarHostState.showSnackbar(message)
+                    viewModel.onMessageShown()
+                }
+            }
         }
-        forecastState.message?.let { message ->
-            LaunchedEffect(message, scaffoldState) {
-                scaffoldState.snackbarHostState.showSnackbar(message)
-                viewModel.onMessageShown()
+    }
+}
+
+@Composable
+private fun PermissionNotGrantedView(
+    onLocationPermissionChanged: (Boolean) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Background)
+    ) {
+        val launcher = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { isGrantedMap: Map<String, Boolean> ->
+            Log.d(TAG, "isPermissionGrantedMap=$isGrantedMap")
+            val isGranted = isGrantedMap.any { it.value }
+            if (isGranted) {
+                onLocationPermissionChanged(true)
+            } else {
+                onLocationPermissionChanged(false)
+            }
+        }
+
+        Column(modifier = Modifier.align(Alignment.Center)) {
+            Text(
+                text = stringResource(R.string.ask_location_permission),
+                fontSize = 18.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .padding(bottom = 8.dp)
+                    .padding(horizontal = 16.dp)
+            )
+            Button(
+                onClick = {
+                    Log.d(TAG, "Requesting Permission...")
+                    launcher.launch(LOCATION_PERMISSION.toTypedArray())
+                } ,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = HumidityHigh,
+                    contentColor = Color.White
+                )
+            ) {
+                Text(stringResource(R.string.allow_permission))
             }
         }
     }
@@ -578,7 +636,8 @@ private fun CurrentWeatherPreview() {
                         )
                     )
                 ),
-                isLoading = false
+                isLoading = false,
+                isPermissionGranted = true,
             ),
             onRefresh = { },
             modifier = Modifier
@@ -652,5 +711,13 @@ private fun EmptyViewPreview() {
 private fun RetryPreview() {
     WeatherForecastTheme {
         RetryView(onRetry = { })
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PermissionNotGrantedViewPreview() {
+    WeatherForecastTheme {
+        PermissionNotGrantedView(onLocationPermissionChanged = {})
     }
 }

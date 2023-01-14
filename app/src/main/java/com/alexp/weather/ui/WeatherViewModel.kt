@@ -6,8 +6,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.alexp.weather.R
 import com.alexp.weather.data.repo.CurrentWeatherInfo
+import com.alexp.weather.data.repo.PermissionRepository
 import com.alexp.weather.data.repo.WeatherInfo
 import com.alexp.weather.data.repo.WeatherRepository
+import com.alexp.weather.data.repo.LOCATION_PERMISSION
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -26,7 +28,8 @@ private const val MIN_LOADING_TIME = 1000
 @HiltViewModel
 class WeatherViewModel @Inject constructor(
     private val app: Application,
-    private val weatherRepository: WeatherRepository
+    private val weatherRepository: WeatherRepository,
+    private val permissionRepository: PermissionRepository
 ) : AndroidViewModel(app) {
 
     private val _uiState = MutableStateFlow(INIT_UI_STATE)
@@ -37,6 +40,12 @@ class WeatherViewModel @Inject constructor(
     private val hourlyTimeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
 
     init {
+        viewModelScope.launch {
+            val isGranted = permissionRepository.isPermissionGranted(LOCATION_PERMISSION)
+            _uiState.value = _uiState.value.copy(
+                isPermissionGranted = isGranted
+            )
+        }
         viewModelScope.launch {
             updateWeather(updateLoaderOnSuccess = true)
         }
@@ -82,6 +91,12 @@ class WeatherViewModel @Inject constructor(
     fun onMessageShown() {
         _uiState.value = _uiState.value.copy(
             message = null
+        )
+    }
+
+    fun onLocationPermissionChanged(isGranted: Boolean) {
+        _uiState.value = _uiState.value.copy(
+            isPermissionGranted = isGranted
         )
     }
 
@@ -167,5 +182,6 @@ private val INIT_UI_STATE = WeatherUiState(
     ),
     daily = emptyList(),
     hourly = emptyList(),
+    isPermissionGranted = false,
     isLoading = true
 )

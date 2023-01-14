@@ -1,5 +1,7 @@
 package com.alexp.weather.di
 
+import com.alexp.weather.data.repo.PermissionRepository
+import com.alexp.weather.data.repo.PermissionRepositoryImpl
 import com.alexp.weather.data.repo.WeatherRepository
 import com.alexp.weather.data.repo.WeatherRepositoryImpl
 import com.alexp.weather.data.source.remote.BASE_URL
@@ -38,4 +40,7 @@ object RepoModule {
 
     @Provides
     fun getWeatherRepository(repo: WeatherRepositoryImpl): WeatherRepository = repo
+
+    @Provides
+    fun getWeatherModule(repo: PermissionRepositoryImpl): PermissionRepository = repo
 }
