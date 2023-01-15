@@ -1,12 +1,16 @@
 package com.alexp.weather.ui
 
 data class WeatherUiState(
-    val current: CurrentWeatherUiState,
-    val daily: List<DailyWeatherUiState>,
-    val hourly: List<HourlyWeatherUiState>,
+    val weatherData: AggregatedWeatherUIState?,
     val isLoading: Boolean = false,
     val isPermissionGranted: Boolean,
     val message: String? = null
+)
+
+data class AggregatedWeatherUIState(
+    val current: CurrentWeatherUiState,
+    val daily: List<DailyWeatherUiState>,
+    val hourly: List<HourlyWeatherUiState>,
 )
 
 data class DailyWeatherUiState(

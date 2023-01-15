@@ -55,9 +55,11 @@ class WeatherViewModel @Inject constructor(
         try {
             val weather = weatherRepository.getWeather()
             _uiState.value = _uiState.value.copy(
-                current = currentCurrentWeatherUiState(weather.current),
-                daily = dailyDailyWeatherUiStates(weather),
-                hourly = getHourlyWeatherUiStates(weather),
+                weatherData = AggregatedWeatherUIState(
+                    current = currentCurrentWeatherUiState(weather.current),
+                    daily = dailyDailyWeatherUiStates(weather),
+                    hourly = getHourlyWeatherUiStates(weather),
+                ),
                 isLoading = if (updateLoaderOnSuccess) false else _uiState.value.isLoading
             )
         } catch (e: CancellationException) {
@@ -174,14 +176,7 @@ class WeatherViewModel @Inject constructor(
 }
 
 private val INIT_UI_STATE = WeatherUiState(
-    current = CurrentWeatherUiState(
-        temp = 0,
-        feelLike = 0,
-        updatedTime = "",
-        icon = ""
-    ),
-    daily = emptyList(),
-    hourly = emptyList(),
+    weatherData = null,
     isPermissionGranted = false,
     isLoading = true
 )

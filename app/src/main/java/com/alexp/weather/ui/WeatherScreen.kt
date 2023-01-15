@@ -1,8 +1,5 @@
 package com.alexp.weather.ui
 
-import android.util.Log
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -21,8 +18,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.Scaffold
@@ -44,7 +39,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -65,7 +59,6 @@ import androidx.lifecycle.compose.ExperimentalLifecycleComposeApi
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.alexp.weather.R
-import com.alexp.weather.data.repo.LOCATION_PERMISSION
 import com.alexp.weather.ui.theme.Background
 import com.alexp.weather.ui.theme.ChartGrey
 import com.alexp.weather.ui.theme.Grey
@@ -100,7 +93,8 @@ fun WeatherScreen(
                 onLocationPermissionChanged = { viewModel.onLocationPermissionChanged(it) }
             )
         } else {
-            if (forecastState.daily.isEmpty()) {
+            val weatherData = forecastState.weatherData
+            if (weatherData == null) {
                 if (forecastState.isLoading) {
                     LoadingView()
                 } else {
@@ -108,7 +102,8 @@ fun WeatherScreen(
                 }
             } else {
                 WeatherContent(
-                    forecastState = forecastState,
+                    weatherData = weatherData,
+                    isLoading = forecastState.isLoading,
                     onRefresh = { viewModel.onRefresh() },
                     modifier = Modifier.padding(paddingValues)
                 )
@@ -123,120 +118,11 @@ fun WeatherScreen(
     }
 }
 
-@Composable
-private fun PermissionNotGrantedView(
-    onLocationPermissionChanged: (Boolean) -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Background)
-    ) {
-        val launcher = rememberLauncherForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) { isGrantedMap: Map<String, Boolean> ->
-            Log.d(TAG, "isPermissionGrantedMap=$isGrantedMap")
-            val isGranted = isGrantedMap.any { it.value }
-            if (isGranted) {
-                onLocationPermissionChanged(true)
-            } else {
-                onLocationPermissionChanged(false)
-            }
-        }
-
-        Column(modifier = Modifier.align(Alignment.Center)) {
-            Text(
-                text = stringResource(R.string.ask_location_permission),
-                fontSize = 18.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .padding(bottom = 8.dp)
-                    .padding(horizontal = 16.dp)
-            )
-            Button(
-                onClick = {
-                    Log.d(TAG, "Requesting Permission...")
-                    launcher.launch(LOCATION_PERMISSION.toTypedArray())
-                } ,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = HumidityHigh,
-                    contentColor = Color.White
-                )
-            ) {
-                Text(stringResource(R.string.allow_permission))
-            }
-        }
-    }
-}
-
-@Composable
-private fun LoadingView() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Background)
-    ) {
-        Column(modifier = Modifier.align(Alignment.Center)) {
-            Icon(
-                painterResource(id = R.drawable.ic_loading_loading),
-                contentDescription = null,
-                tint = HumidityHigh,
-                modifier = Modifier
-                    .padding(bottom = 8.dp)
-                    .size(36.dp)
-                    .align(Alignment.CenterHorizontally)
-            )
-            Text(
-                text = stringResource(R.string.loading),
-                fontSize = 18.sp,
-            )
-        }
-    }
-}
-
-@Composable
-private fun RetryView(
-    onRetry: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Background)
-    ) {
-        Column(modifier = Modifier.align(Alignment.Center)) {
-            Icon(
-                painterResource(id = R.drawable.ic_retry),
-                contentDescription = null,
-                tint = HumidityHigh,
-                modifier = Modifier
-                    .padding(bottom = 8.dp)
-                    .size(36.dp)
-                    .align(Alignment.CenterHorizontally)
-            )
-            Text(
-                text = stringResource(R.string.data_not_available),
-                fontSize = 18.sp,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            Button(
-                onClick = onRetry,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = HumidityHigh,
-                    contentColor = Color.White
-                )
-            ) {
-                Text(stringResource(R.string.regresh))
-            }
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun WeatherContent(
-    forecastState: WeatherUiState,
+    weatherData: AggregatedWeatherUIState,
+    isLoading: Boolean,
     onRefresh: () -> Unit,
     modifier: Modifier
 ) {
@@ -255,7 +141,7 @@ fun WeatherContent(
     }
 
     val pullRefreshState = rememberPullRefreshState(
-        refreshing = forecastState.isLoading,
+        refreshing = isLoading,
         onRefresh = onRefresh,
         refreshingOffset = 80.dp
     )
@@ -270,18 +156,18 @@ fun WeatherContent(
             modifier = Modifier
                 .nestedScroll(nestedScrollConnection)
         ) {
-            CurrentWeather(forecastState.current, toolbarExpandRatio.value)
+            CurrentWeather(weatherData.current, toolbarExpandRatio.value)
             CompositionLocalProvider(
                 LocalOverscrollConfiguration provides null
             ) {
                 LazyColumn {
-                    item { HourlyForecast(forecastState.hourly) }
-                    item { DailyForecast(forecastState.daily) }
+                    item { HourlyForecast(weatherData.hourly) }
+                    item { DailyForecast(weatherData.daily) }
                 }
             }
         }
         PullRefreshIndicator(
-            refreshing = forecastState.isLoading,
+            refreshing = isLoading,
             state = pullRefreshState,
             modifier = Modifier.align(Alignment.TopCenter)
         )
@@ -375,7 +261,6 @@ private fun HourItemForecast(hour: HourlyWeatherUiState) {
             contentDescription = null,
             modifier = Modifier
                 .size(36.dp)
-            //.padding(horizontal = 6.dp)
         )
         Text(
             text = "${hour.temp}°",
@@ -607,7 +492,7 @@ private fun nestedScrollConnection(
 private fun CurrentWeatherPreview() {
     WeatherForecastTheme {
         WeatherContent(
-            WeatherUiState(
+            weatherData = AggregatedWeatherUIState(
                 current = CurrentWeatherUiState(
                     temp = 10,
                     feelLike = 12,
@@ -635,10 +520,9 @@ private fun CurrentWeatherPreview() {
                             nextHeight = 0.6f
                         )
                     )
-                ),
-                isLoading = false,
-                isPermissionGranted = true,
+                )
             ),
+            isLoading = false,
             onRefresh = { },
             modifier = Modifier
         )
@@ -695,29 +579,5 @@ private fun DailyItemForecastPreview() {
                 tempNight = 20
             )
         )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun EmptyViewPreview() {
-    WeatherForecastTheme {
-        LoadingView()
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun RetryPreview() {
-    WeatherForecastTheme {
-        RetryView(onRetry = { })
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun PermissionNotGrantedViewPreview() {
-    WeatherForecastTheme {
-        PermissionNotGrantedView(onLocationPermissionChanged = {})
     }
 }
