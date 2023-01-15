@@ -5,9 +5,9 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.alexp.weather.R
-import com.alexp.weather.data.repo.CurrentWeatherInfo
+import com.alexp.weather.data.repo.model.CurrentWeatherInfo
 import com.alexp.weather.data.repo.PermissionRepository
-import com.alexp.weather.data.repo.WeatherInfo
+import com.alexp.weather.data.repo.model.WeatherInfo
 import com.alexp.weather.data.repo.WeatherRepository
 import com.alexp.weather.data.repo.LOCATION_PERMISSION
 import dagger.hilt.android.lifecycle.HiltViewModel

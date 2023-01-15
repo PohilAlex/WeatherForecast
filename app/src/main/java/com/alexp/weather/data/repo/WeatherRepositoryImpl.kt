@@ -1,6 +1,10 @@
 package com.alexp.weather.data.repo
 
 import android.util.Log
+import com.alexp.weather.data.repo.model.CurrentWeatherInfo
+import com.alexp.weather.data.repo.model.DailyWeatherInfo
+import com.alexp.weather.data.repo.model.HourlyWeatherInfo
+import com.alexp.weather.data.repo.model.WeatherInfo
 import com.alexp.weather.data.source.remote.WeatherApi
 import com.alexp.weather.data.source.remote.WeatherItemRemoteDTO
 import javax.inject.Inject

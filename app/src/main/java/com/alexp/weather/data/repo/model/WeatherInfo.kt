@@ -1,4 +1,4 @@
-package com.alexp.weather.data.repo
+package com.alexp.weather.data.repo.model
 
 data class WeatherInfo(
     val current: CurrentWeatherInfo,

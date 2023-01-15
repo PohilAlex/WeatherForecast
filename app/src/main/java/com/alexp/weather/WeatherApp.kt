@@ -1,4 +1,4 @@
-package com.alexp.weather.data
+package com.alexp.weather
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
