@@ -16,8 +16,11 @@ class WeatherRepositoryImpl @Inject constructor(
     private val weatherApi: WeatherApi
 ) : WeatherRepository {
 
-    override suspend fun getWeather(): WeatherInfo {
-        val remoteData = weatherApi.getOneCallData()
+    override suspend fun getWeather(lat: Double, lon: Double): WeatherInfo {
+        val remoteData = weatherApi.getOneCallData(
+            lat = lat,
+            lon = lon,
+        )
         Log.d(TAG, "Weather updated data=$remoteData")
         val current = remoteData.current
         return WeatherInfo(

@@ -4,5 +4,5 @@ import com.alexp.weather.data.repo.model.WeatherInfo
 
 interface WeatherRepository {
 
-    suspend fun getWeather(): WeatherInfo
+    suspend fun getWeather(lat: Double, lon: Double): WeatherInfo
 }
