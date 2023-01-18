@@ -1,5 +1,6 @@
 package com.alexp.weather.ui
 
+import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -88,31 +89,30 @@ fun WeatherScreen(
 ) {
     val forecastState by viewModel.uiState.collectAsStateWithLifecycle()
     Scaffold(scaffoldState = scaffoldState) { paddingValues ->
-        if (!forecastState.isPermissionGranted) {
-            PermissionNotGrantedView(
-                onLocationPermissionChanged = { viewModel.onLocationPermissionChanged(it) }
-            )
-        } else {
-            val weatherData = forecastState.weatherData
-            if (weatherData == null) {
-                if (forecastState.isLoading) {
-                    LoadingView()
-                } else {
-                    RetryView(onRetry = { viewModel.onRefresh() })
-                }
-            } else {
-                WeatherContent(
-                    weatherData = weatherData,
-                    isLoading = forecastState.isLoading,
-                    onRefresh = { viewModel.onRefresh() },
-                    modifier = Modifier.padding(paddingValues)
+        val weatherData = forecastState.weatherData
+        Log.d(TAG, "forecastState=$forecastState")
+        if (weatherData == null) {
+            if (!forecastState.isPermissionGranted) {
+                PermissionNotGrantedView(
+                    onLocationPermissionChanged = { viewModel.onLocationPermissionChanged(it) }
                 )
+            } else if (forecastState.isLoading) {
+                LoadingView()
+            } else {
+                RetryView(onRetry = { viewModel.onRefresh() })
             }
-            forecastState.message?.let { message ->
-                LaunchedEffect(message, scaffoldState) {
-                    scaffoldState.snackbarHostState.showSnackbar(message)
-                    viewModel.onMessageShown()
-                }
+        } else {
+            WeatherContent(
+                weatherData = weatherData,
+                isLoading = forecastState.isLoading,
+                onRefresh = { viewModel.onRefresh() },
+                modifier = Modifier.padding(paddingValues)
+            )
+        }
+        forecastState.message?.let { message ->
+            LaunchedEffect(message, scaffoldState) {
+                scaffoldState.snackbarHostState.showSnackbar(message)
+                viewModel.onMessageShown()
             }
         }
     }
