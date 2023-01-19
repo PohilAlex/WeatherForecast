@@ -2,7 +2,8 @@ package com.alexp.weather.ui
 
 data class WeatherUiState(
     val weatherData: AggregatedWeatherUIState?,
-    val isLoading: Boolean = false,
+    val isLoading: Boolean,
+    val isRefreshing: Boolean,
     val isPermissionGranted: Boolean,
     val message: String? = null
 )

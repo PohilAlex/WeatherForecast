@@ -19,8 +19,8 @@ class LocationRepositoryImpl: LocationRepository {
                 ?.addOnSuccessListener { location : Location? ->
                    continuation.resume(location)
                 }
-                ?.addOnFailureListener { location ->
-                    continuation.resumeWithException(location)
+                ?.addOnFailureListener { exception ->
+                    continuation.resumeWithException(exception)
                 }
                 ?.addOnCanceledListener {
                     continuation.resumeWithException(CancellationException("LastLocation task was canceled"))

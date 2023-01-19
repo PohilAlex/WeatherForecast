@@ -1,16 +1,17 @@
 package com.alexp.weather.ui
 
 import android.app.Application
+import android.location.Location
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.alexp.weather.R
-import com.alexp.weather.data.repo.model.CurrentWeatherInfo
-import com.alexp.weather.data.repo.PermissionRepository
-import com.alexp.weather.data.repo.model.WeatherInfo
-import com.alexp.weather.data.repo.WeatherRepository
 import com.alexp.weather.data.repo.LOCATION_PERMISSION
 import com.alexp.weather.data.repo.LocationRepository
+import com.alexp.weather.data.repo.PermissionRepository
+import com.alexp.weather.data.repo.WeatherRepository
+import com.alexp.weather.data.repo.model.CurrentWeatherInfo
+import com.alexp.weather.data.repo.model.WeatherInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -46,8 +48,9 @@ class WeatherViewModel @Inject constructor(
         }
 
     val uiState: StateFlow<WeatherUiState>
-    private val _isLoading = MutableStateFlow(true)
-    private val _isLocationPermissionGranted = MutableStateFlow(false)
+    private val _isLoading = MutableStateFlow(INIT_UI_STATE.isLoading)
+    private val _isRefreshing = MutableStateFlow(INIT_UI_STATE.isRefreshing)
+    private val _isLocationPermissionGranted = MutableStateFlow(INIT_UI_STATE.isPermissionGranted)
     private val _userMessage: MutableStateFlow<String?> = MutableStateFlow(null)
 
     private val dayOfWeekFormatter = SimpleDateFormat("EEEE", Locale.getDefault())
@@ -64,9 +67,10 @@ class WeatherViewModel @Inject constructor(
 
     private fun getWeather(): Flow<WeatherInfo?> {
         return weatherRepository.getWeather()
-            .catch {
-                //TODO emmit null only for case when no data is available
+            .onStart {
                 emit(null)
+            }
+            .catch {
                 Log.e(TAG, "Error while loading data", it)
             }
     }
@@ -74,7 +78,14 @@ class WeatherViewModel @Inject constructor(
     private fun retrieveLocationAndUpdateWeather(isForce: Boolean = false) {
         if (locationRepository != null && _isLocationPermissionGranted.value) {
             viewModelScope.launch {
-                val location = locationRepository?.getLastLocation()
+                var location: Location? = null
+                try {
+                    location = locationRepository?.getLastLocation()
+                } catch (ex: CancellationException) {
+                    throw ex
+                } catch (ex: Exception) {
+                    Log.e(TAG, "getLastLocation exception", ex)
+                }
 
                 Log.d(TAG, "last location=$location")
                 //TODO handle case when location is null
@@ -91,8 +102,9 @@ class WeatherViewModel @Inject constructor(
 
     private suspend fun updateWeather(isForce: Boolean, lat: Double, lon: Double) {
         try {
+            _isLoading.value = true
             weatherRepository.refreshWeather(lat = lat, lon = lon)
-            _isLoading.value = isForce
+            _isLoading.value = false
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -104,14 +116,14 @@ class WeatherViewModel @Inject constructor(
 
     fun onRefresh() {
         viewModelScope.launch {
-            _isLoading.value = true
+            _isRefreshing.value = true
             val startTime = System.currentTimeMillis()
             retrieveLocationAndUpdateWeather(isForce = true)
             val endTime = System.currentTimeMillis()
             val delay = endTime - startTime
             Log.d(TAG, "Refresh time=$delay")
             delay(max(0, MIN_LOADING_TIME - delay))
-            _isLoading.value = false
+            _isRefreshing.value = false
         }
     }
 
@@ -202,5 +214,6 @@ class WeatherViewModel @Inject constructor(
 private val INIT_UI_STATE = WeatherUiState(
     weatherData = null,
     isPermissionGranted = true,
-    isLoading = true
+    isLoading = true,
+    isRefreshing = false
 )

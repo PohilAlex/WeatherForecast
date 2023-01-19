@@ -90,7 +90,6 @@ fun WeatherScreen(
     val forecastState by viewModel.uiState.collectAsStateWithLifecycle()
     Scaffold(scaffoldState = scaffoldState) { paddingValues ->
         val weatherData = forecastState.weatherData
-        Log.d(TAG, "forecastState=$forecastState")
         if (weatherData == null) {
             if (!forecastState.isPermissionGranted) {
                 PermissionNotGrantedView(
@@ -104,7 +103,7 @@ fun WeatherScreen(
         } else {
             WeatherContent(
                 weatherData = weatherData,
-                isLoading = forecastState.isLoading,
+                isRefreshing = forecastState.isRefreshing,
                 onRefresh = { viewModel.onRefresh() },
                 modifier = Modifier.padding(paddingValues)
             )
@@ -122,7 +121,7 @@ fun WeatherScreen(
 @Composable
 fun WeatherContent(
     weatherData: AggregatedWeatherUIState,
-    isLoading: Boolean,
+    isRefreshing: Boolean,
     onRefresh: () -> Unit,
     modifier: Modifier
 ) {
@@ -141,7 +140,7 @@ fun WeatherContent(
     }
 
     val pullRefreshState = rememberPullRefreshState(
-        refreshing = isLoading,
+        refreshing = isRefreshing,
         onRefresh = onRefresh,
         refreshingOffset = 80.dp
     )
@@ -167,7 +166,7 @@ fun WeatherContent(
             }
         }
         PullRefreshIndicator(
-            refreshing = isLoading,
+            refreshing = isRefreshing,
             state = pullRefreshState,
             modifier = Modifier.align(Alignment.TopCenter)
         )
@@ -522,7 +521,7 @@ private fun CurrentWeatherPreview() {
                     )
                 )
             ),
-            isLoading = false,
+            isRefreshing = false,
             onRefresh = { },
             modifier = Modifier
         )
