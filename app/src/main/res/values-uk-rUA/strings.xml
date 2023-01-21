@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Погода</string>
+    <string name="today">Сьогодні</string>
+    <string name="feel_like">Відчувається як %d°</string>
+    <string name="data_not_available">Дані недоступні</string>
+    <string name="loading">Загрузка погоди для Вас</string>
+    <string name="regresh">Оновити</string>
+    <string name="ask_location_permission">Будь ласка надайте дозвіл щоб бачити актуальний прогноз</string>
+    <string name="allow_permission">Дати дозвіл</string>
+    <string name="turn_on_location_description">Будь ласка увімкніть геолокацію</string>
+    <string name="turn_on_location_btn">Увімкнути</string>
+</resources>

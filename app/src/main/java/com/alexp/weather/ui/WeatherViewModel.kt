@@ -235,7 +235,7 @@ class WeatherViewModel @Inject constructor(
         if (isCurrentDay(dt)) {
             return app.getString(R.string.today)
         }
-        return dayOfWeekFormatter.format(Date(dt))
+        return dayOfWeekFormatter.format(Date(dt)).capitalize()
     }
 
     private fun isCurrentDay(dt: Long): Boolean {
