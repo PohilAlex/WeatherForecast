@@ -10,6 +10,8 @@ import com.alexp.weather.data.repo.WeatherRepository
 import com.alexp.weather.data.repo.WeatherRepositoryImpl
 import com.alexp.weather.data.source.local.LocalForecastSource
 import com.alexp.weather.data.source.local.LocalForecastSourceImpl
+import com.alexp.weather.data.source.local.LocalLocationSource
+import com.alexp.weather.data.source.local.LocalLocationSourceImpl
 import com.alexp.weather.data.source.remote.BASE_URL
 import com.alexp.weather.data.source.remote.WeatherApi
 import dagger.Module
@@ -56,6 +58,9 @@ object LocalModule {
 
     @Provides
     fun getLocalForecastSource(source: LocalForecastSourceImpl): LocalForecastSource = source
+
+    @Provides
+    fun getLocalLocationSource(source: LocalLocationSourceImpl): LocalLocationSource = source
 }
 
 @Module

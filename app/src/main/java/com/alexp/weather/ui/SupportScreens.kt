@@ -79,6 +79,40 @@ fun PermissionNotGrantedView(
 }
 
 @Composable
+fun EnableLocationView(
+    onEnableLocation: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Background)
+    ) {
+        Column(modifier = Modifier.align(Alignment.Center)) {
+            Text(
+                text = stringResource(R.string.turn_on_location_description),
+                fontSize = 18.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .padding(bottom = 8.dp)
+                    .padding(horizontal = 16.dp)
+            )
+            Button(
+                onClick = {
+                    onEnableLocation()
+                },
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = HumidityHigh,
+                    contentColor = Color.White
+                )
+            ) {
+                Text(stringResource(R.string.turn_on_location_btn))
+            }
+        }
+    }
+}
+
+@Composable
 fun LoadingView() {
     Box(
         modifier = Modifier
@@ -162,5 +196,13 @@ private fun EmptyViewPreview() {
 private fun RetryPreview() {
     WeatherForecastTheme {
         RetryView(onRetry = { })
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun EnableLocationPreview() {
+    WeatherForecastTheme {
+        EnableLocationView(onEnableLocation = { })
     }
 }

@@ -7,4 +7,6 @@
     <string name="regresh">Refresh</string>
     <string name="ask_location_permission">Please allow location permission to show actual forecast for you</string>
     <string name="allow_permission">Allow Permission</string>
+    <string name="turn_on_location_description">Please turn on Location service on your phone</string>
+    <string name="turn_on_location_btn">Turn on Location</string>
 </resources>

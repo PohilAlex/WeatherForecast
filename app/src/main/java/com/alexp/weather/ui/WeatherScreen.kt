@@ -95,6 +95,8 @@ fun WeatherScreen(
                 PermissionNotGrantedView(
                     onLocationPermissionChanged = { viewModel.onLocationPermissionChanged(it) }
                 )
+            } else if (!forecastState.isLocationAvailable) {
+                EnableLocationView(onEnableLocation = { viewModel.onEnableLocation()})
             } else if (forecastState.isLoading) {
                 LoadingView()
             } else {

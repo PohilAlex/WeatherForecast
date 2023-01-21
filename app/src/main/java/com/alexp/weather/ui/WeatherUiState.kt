@@ -5,6 +5,7 @@ data class WeatherUiState(
     val isLoading: Boolean,
     val isRefreshing: Boolean,
     val isPermissionGranted: Boolean,
+    val isLocationAvailable: Boolean,
     val message: String? = null
 )
 

@@ -12,6 +12,9 @@ import com.alexp.weather.data.repo.PermissionRepository
 import com.alexp.weather.data.repo.WeatherRepository
 import com.alexp.weather.data.repo.model.CurrentWeatherInfo
 import com.alexp.weather.data.repo.model.WeatherInfo
+import com.alexp.weather.data.repo.model.WeatherLocation
+import com.alexp.weather.data.source.local.LocalLocationSource
+import com.alexp.weather.utils.combine
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -20,7 +23,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
@@ -33,25 +35,30 @@ import kotlin.math.roundToInt
 
 private const val TAG = "WeatherViewModel"
 private const val MIN_LOADING_TIME = 1000
+private const val DELAY_BEFORE_UPDATING_LOCATION = 2000L
 
 @HiltViewModel
 class WeatherViewModel @Inject constructor(
     private val app: Application,
     private val weatherRepository: WeatherRepository,
-    private val permissionRepository: PermissionRepository
+    private val permissionRepository: PermissionRepository,
+    private val locationSource: LocalLocationSource //TODO move to repository
 ) : AndroidViewModel(app) {
 
     var locationRepository: LocationRepository? = null
         set(value) {
             field = value
-            retrieveLocationAndUpdateWeather()
+            retrieveLocation()
         }
+
+    var enableLocationHelper: EnableLocationHelper? = null
 
     val uiState: StateFlow<WeatherUiState>
     private val _isLoading = MutableStateFlow(INIT_UI_STATE.isLoading)
     private val _isRefreshing = MutableStateFlow(INIT_UI_STATE.isRefreshing)
     private val _isLocationPermissionGranted = MutableStateFlow(INIT_UI_STATE.isPermissionGranted)
     private val _userMessage: MutableStateFlow<String?> = MutableStateFlow(null)
+    private var location: WeatherLocation? = null
 
     private val dayOfWeekFormatter = SimpleDateFormat("EEEE", Locale.getDefault())
     private val updateTimeFormatter = SimpleDateFormat("EEE, HH:mm", Locale.getDefault())
@@ -61,7 +68,7 @@ class WeatherViewModel @Inject constructor(
         viewModelScope.launch {
             val isGranted = permissionRepository.isPermissionGranted(LOCATION_PERMISSION)
             _isLocationPermissionGranted.value = isGranted
-            retrieveLocationAndUpdateWeather()
+            retrieveLocation()
         }
     }
 
@@ -75,7 +82,21 @@ class WeatherViewModel @Inject constructor(
             }
     }
 
-    private fun retrieveLocationAndUpdateWeather(isForce: Boolean = false) {
+    private fun getLocation(): Flow<WeatherLocation?> {
+        return locationSource.observeLocation()
+            .onStart {
+                emit(null)
+            }
+            .onEach { location ->
+                this.location = location
+                updateWeather()
+            }
+            .catch {
+                Log.e(TAG, "Error while loading location", it)
+            }
+    }
+
+    private fun retrieveLocation() {
         if (locationRepository != null && _isLocationPermissionGranted.value) {
             viewModelScope.launch {
                 var location: Location? = null
@@ -88,19 +109,23 @@ class WeatherViewModel @Inject constructor(
                 }
 
                 Log.d(TAG, "last location=$location")
-                //TODO handle case when location is null
                 if (location != null) {
-                    updateWeather(
-                        isForce = isForce,
+                    locationSource.storeLocation(WeatherLocation(
                         lat = location.latitude,
                         lon = location.longitude
-                    )
+                    ))
                 }
             }
         }
     }
 
-    private suspend fun updateWeather(isForce: Boolean, lat: Double, lon: Double) {
+    private suspend fun updateWeather() {
+        location?.let {
+            updateWeather(it.lat, it.lon)
+        }
+    }
+
+    private suspend fun updateWeather(lat: Double, lon: Double) {
         try {
             _isLoading.value = true
             weatherRepository.refreshWeather(lat = lat, lon = lon)
@@ -118,7 +143,7 @@ class WeatherViewModel @Inject constructor(
         viewModelScope.launch {
             _isRefreshing.value = true
             val startTime = System.currentTimeMillis()
-            retrieveLocationAndUpdateWeather(isForce = true)
+            updateWeather()
             val endTime = System.currentTimeMillis()
             val delay = endTime - startTime
             Log.d(TAG, "Refresh time=$delay")
@@ -134,7 +159,19 @@ class WeatherViewModel @Inject constructor(
     fun onLocationPermissionChanged(isGranted: Boolean) {
         _isLocationPermissionGranted.value = isGranted
         if (isGranted) {
-            retrieveLocationAndUpdateWeather()
+            retrieveLocation()
+        }
+    }
+
+    fun onEnableLocation() {
+        enableLocationHelper?.enableLocation { isEnableed ->
+            if (isEnableed) {
+                viewModelScope.launch {
+                    //TODO observe location instead
+                    delay(DELAY_BEFORE_UPDATING_LOCATION)
+                    retrieveLocation()
+                }
+            }
         }
     }
 
@@ -215,5 +252,6 @@ private val INIT_UI_STATE = WeatherUiState(
     weatherData = null,
     isPermissionGranted = true,
     isLoading = true,
-    isRefreshing = false
+    isRefreshing = false,
+    isLocationAvailable = true
 )

@@ -10,13 +10,13 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.ui.Modifier
 import com.alexp.weather.data.repo.LocationRepositoryImpl
+import com.alexp.weather.ui.EnableLocationHelperImpl
 import com.alexp.weather.ui.WeatherScreen
 import com.alexp.weather.ui.WeatherViewModel
 import com.alexp.weather.ui.theme.WeatherForecastTheme
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import dagger.hilt.android.AndroidEntryPoint
-
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -25,12 +25,16 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val locationRepository = LocationRepositoryImpl()
+    private val enableLocationHelper = EnableLocationHelperImpl()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         locationRepository.fusedLocationClient = fusedLocationClient
         viewModel.locationRepository = locationRepository
+        enableLocationHelper.activity = this
+        viewModel.enableLocationHelper = enableLocationHelper
+
         setContent {
             WeatherForecastTheme {
                 // A surface container using the 'background' color from the theme
@@ -49,5 +53,8 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         locationRepository.fusedLocationClient = null
+        enableLocationHelper.activity = null
+        viewModel.locationRepository = null
+        viewModel.enableLocationHelper = null
     }
 }
